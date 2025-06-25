@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model job_titles {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique(map: "unique_department_name") @db.VarChar(64)
+  users users[]
+}
+
+model roles {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique(map: "unique_role_name") @db.VarChar(64)
+  users users[]
+}
+
+model statuses {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique(map: "unique_status_name") @db.VarChar(64)
+  tasks tasks[]
+}
+
+model tasks {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  task_number       String              @unique(map: "unique_task_number") @db.VarChar(64)
+  date_out          DateTime?           @db.Timestamp(6)
+  date_in           DateTime?           @db.Timestamp(6)
+  description       String
+  commentary        String?
+  status_id         Int                 @default(1)
+  createdById       String              @db.Uuid
+  createdAt         DateTime            @default(now()) @db.Timestamp(6)
+  closedAt          DateTime?           @db.Timestamp(6)
+  repairedAt        DateTime?           @db.Timestamp(6)
+  lastSyncedAt      DateTime?           @db.Timestamp(6)
+  frozen_data       Json?               @db.Json
+  device_id         String?             @db.Uuid
+  repair_conclusion repair_conclusions?
+  creator           users               @relation("TaskCreator", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_createdbyid")
+  devices           devices?            @relation(fields: [device_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_device")
+  statuses          statuses            @relation(fields: [status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_status")
+}
+
+model users {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  role_id      Int
+  email        String      @unique(map: "unique_email") @db.VarChar(255)
+  login        String      @unique(map: "unique_login") @db.VarChar(255)
+  password     String      @db.VarChar(255)
+  name         String      @db.VarChar(255)
+  surname      String      @db.VarChar(255)
+  patronymic   String?     @db.VarChar(255)
+  job_title_id Int?
+  createdTasks tasks[]     @relation("TaskCreator")
+  job_titles   job_titles? @relation(fields: [job_title_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_job_title")
+  roles        roles       @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role")
+}
+
+model addresses {
+  id      Int       @id @default(autoincrement())
+  name    String    @unique @db.VarChar(255)
+  lat     Float?
+  lon     Float?
+  devices devices[]
+}
+
+model repair_conclusions {
+  id      String  @id(map: "repair-conclusion _pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  text    String?
+  url_doc String?
+  task_id String  @unique @db.Uuid
+  task    tasks   @relation(fields: [task_id], references: [id], onDelete: Cascade, map: "fk_repair_conclusion")
+}
+
+model device_types {
+  id      Int       @id @default(autoincrement())
+  name    String    @unique @db.VarChar(255)
+  devices devices[]
+}
+
+model devices {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  device_name      String       @unique(map: "unique_device_name") @db.VarChar(255)
+  device_brand     String       @db.VarChar(16)
+  serial_number    String       @db.VarChar(16)
+  inventory_number String       @db.VarChar(16)
+  user_name        String       @db.VarChar(255)
+  user_phone       String       @db.VarChar(16)
+  MOL_name         String       @db.VarChar(255)
+  MOL_phone        String       @db.VarChar(16)
+  company          String       @db.VarChar(255)
+  address_id       Int
+  device_type_id   Int
+  addresses        addresses    @relation(fields: [address_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_address")
+  device_types     device_types @relation(fields: [device_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_device_type")
+  tasks            tasks[]
+}

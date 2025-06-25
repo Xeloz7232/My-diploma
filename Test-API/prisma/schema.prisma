@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model address {
+  id     Int      @id @default(autoincrement())
+  name   String
+  device device[]
+}
+
+model company {
+  id    Int     @id
+  name  String  @db.VarChar(255)
+  users users[]
+}
+
+model device {
+  id             String      @id @db.VarChar(8)
+  brand_name     String      @db.VarChar(16)
+  model          String      @db.VarChar(64)
+  serial_num     String      @unique(map: "uk_serial_num") @db.VarChar(32)
+  inventory_num  String      @unique(map: "uk_inventory_num") @db.VarChar(32)
+  user_id        String?     @db.Uuid
+  address_id     Int?
+  device_type_id Int
+  address        address?    @relation(fields: [address_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  device_type    device_type @relation(fields: [device_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users          users?      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  task           task[]
+}
+
+model device_type {
+  id     Int      @id @default(autoincrement())
+  name   String   @unique @db.VarChar(64)
+  device device[]
+}
+
+model task {
+  id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  task_number  String  @unique(map: "uk_task_num") @db.VarChar(255)
+  device_id    String  @db.VarChar(8)
+  applicant_id String? @db.Uuid
+  MOL          users?  @relation(fields: [applicant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "applicant_id_fkey")
+  device       device  @relation(fields: [device_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model users {
+  id         String   @id(map: "user_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String   @db.VarChar(255)
+  surname    String   @db.VarChar(255)
+  patronymic String?  @db.VarChar(255)
+  phone_num  String?  @db.VarChar(32)
+  company_id Int?
+  device     device[]
+  task       task[]
+  company    company? @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "company_fkey")
+}
