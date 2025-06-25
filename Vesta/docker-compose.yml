@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16.6
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "Fdz88tj1AK+"
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      - db
+      - frontend
+    environment:
+      DATABASE_URL: "postgresql://postgres:Fdz88tj1AK+@db:5432/postgres?schema=public"
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads:/usr/src/app/uploads
+
+volumes:
+  dbdata:
+  uploads:
